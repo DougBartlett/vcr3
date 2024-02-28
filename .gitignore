@@ -1,0 +1,13 @@
+.DS_Store
+.cproject
+.pdm/
+.project
+.projectlinkstore
+.settings/
+.uceditor/
+GNU ARM v10.3.1 - Default/
+autogen/
+config/
+trashed_modified_files/
+vcr3.slcp.bak
+vcr3.slcp.bak0
