@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="ASCII"?>
 <model:MDescriptors xmlns:model="http://www.silabs.com/ss/Studio.ecore">
   <descriptors name="vcr3">
-    <properties key="projectCommon.sdkId" value="com.silabs.sdk.stack.super:4.4.1._-229786066"/>
+    <properties key="projectCommon.sdkId" value="com.silabs.sdk.stack.super:4.4.1._-229786068"/>
     <properties key="universalConfig.generationDirectory" value=""/>
     <properties key="universalConfig.relativeWorkspacePath" value="../vcr3.slcw"/>
     <properties key="universalConfig.toolchainCompatibility" value="iar gcc"/>
