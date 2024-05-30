@@ -6,11 +6,13 @@
 #include <stdlib.h>
 #include <strings.h>
 #include <sl_sleeptimer.h>
+#include <sl_power_manager.h>
 #include <sl_led.h>
 #include <sl_simple_led.h>
 #include <sl_simple_led_instances.h>
 #include <nvm3_default.h>
 #include <sl_bluetooth.h>
+#include <sl_bt_api.h>
 #include "gatt_db.h"
 
 #define  FW_REVISION      "4.3.3"
@@ -22,7 +24,7 @@
 static const char *mirrorNames[] = { "Non-Mirrored", "Mirrored", "Different" };
 static uint8_t displayEnabled = 0;        // Boolean flag indicating whether finger map display is on or off
 static uint8_t vcrRunning = 0;            // Boolean flag indicating whether vibration is running or not
-uint8_t fingerSelectI2C = 0;              // 0 = use LRA FET multiplexing (single DRV2605 chip), 1 = use I2C bus multiplexing (multiple DRV2605 chips)
+uint8_t I2CBusMux = 1;              // 0 = use LRA FET multiplexing (single DRV2605 chip), 1 = use I2C bus multiplexing (multiple DRV2605 chips)
 static char fingerMap[NFINGERS] = { '-', '-', '-', '-' };
 static sl_sleeptimer_timer_handle_t vcrTimerHandle;
 static sl_sleeptimer_timer_handle_t fTimerHandle0[NFINGERS * NTIMERHANDLESETS], fTimerHandle1[NFINGERS * NTIMERHANDLESETS];
@@ -434,8 +436,8 @@ int16_t vcrProcessCommand(char *cmd)
               }
             break;
         case 'X':
-              { sscanf(cmd+1, "%hhu", &fingerSelectI2C);
-                printf("Finger select mode = %s mux\n", fingerSelectI2C ? "I2C bus" : "LRA FET");
+              { sscanf(cmd+1, "%hhu", &I2CBusMux);
+                printf("Finger select mode = %s mux\n", I2CBusMux ? "I2C bus" : "LRA FET");
               }
             break;
         case '@':
@@ -475,6 +477,14 @@ void vcrInit(void)
     sl_bt_gatt_server_write_attribute_value(gattdb_software_revision_string, 0, sizeof(DATETIME), (uint8_t*)DATETIME);
 
     printSplash();
+
+    if(I2CBusMux == 0)                                                        // If there is no I2C bus multiplexer, then we must have a fet multiplexer for a single LRA driver
+      { for(uint8_t pin = 1; pin < 5; pin++)                                  // Configure the port B GPIO pins used to gate the finger multiplexer FETS
+          { GPIO_PinModeSet(gpioPortB, pin, gpioModePushPull, 0);
+            GPIO_PinOutClear(gpioPortB, pin);
+          }
+      }
+
     for(uint8_t finger = 0; finger < NFINGERS; finger++)
         if((iostat = lraReset(finger)) != 0) printf("Reset(%d) failure returned 0x%x\n", finger, iostat);
 

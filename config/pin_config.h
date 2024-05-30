@@ -98,6 +98,30 @@
 // [TIMER4]$
 
 // $[USART0]
+// USART0 CLK on PC02
+#ifndef USART0_CLK_PORT                         
+#define USART0_CLK_PORT                          gpioPortC
+#endif
+#ifndef USART0_CLK_PIN                          
+#define USART0_CLK_PIN                           2
+#endif
+
+// USART0 RX on PC01
+#ifndef USART0_RX_PORT                          
+#define USART0_RX_PORT                           gpioPortC
+#endif
+#ifndef USART0_RX_PIN                           
+#define USART0_RX_PIN                            1
+#endif
+
+// USART0 TX on PC00
+#ifndef USART0_TX_PORT                          
+#define USART0_TX_PORT                           gpioPortC
+#endif
+#ifndef USART0_TX_PIN                           
+#define USART0_TX_PIN                            0
+#endif
+
 // [USART0]$
 
 // $[USART1]
@@ -197,6 +221,76 @@
 #endif
 #ifndef _PIN                                    
 #define _PIN                                     0
+#endif
+
+#ifndef Bat_Sense_Voltage_PORT                  
+#define Bat_Sense_Voltage_PORT                   gpioPortB
+#endif
+#ifndef Bat_Sense_Voltage_PIN                   
+#define Bat_Sense_Voltage_PIN                    0
+#endif
+
+#ifndef Flash_CS_PORT                           
+#define Flash_CS_PORT                            gpioPortB
+#endif
+#ifndef Flash_CS_PIN                            
+#define Flash_CS_PIN                             1
+#endif
+
+#ifndef Btn0_PORT                               
+#define Btn0_PORT                                gpioPortB
+#endif
+#ifndef Btn0_PIN                                
+#define Btn0_PIN                                 2
+#endif
+
+#ifndef IMU_INT_PORT                            
+#define IMU_INT_PORT                             gpioPortB
+#endif
+#ifndef IMU_INT_PIN                             
+#define IMU_INT_PIN                              3
+#endif
+
+#ifndef Bat_Sense_Enable_PORT                   
+#define Bat_Sense_Enable_PORT                    gpioPortB
+#endif
+#ifndef Bat_Sense_Enable_PIN                    
+#define Bat_Sense_Enable_PIN                     4
+#endif
+
+#ifndef SPI_MOSI_PORT                           
+#define SPI_MOSI_PORT                            gpioPortC
+#endif
+#ifndef SPI_MOSI_PIN                            
+#define SPI_MOSI_PIN                             0
+#endif
+
+#ifndef SPI_MISO_PORT                           
+#define SPI_MISO_PORT                            gpioPortC
+#endif
+#ifndef SPI_MISO_PIN                            
+#define SPI_MISO_PIN                             1
+#endif
+
+#ifndef SPI_CLK_PORT                            
+#define SPI_CLK_PORT                             gpioPortC
+#endif
+#ifndef SPI_CLK_PIN                             
+#define SPI_CLK_PIN                              2
+#endif
+
+#ifndef IMU_CS_PORT                             
+#define IMU_CS_PORT                              gpioPortC
+#endif
+#ifndef IMU_CS_PIN                              
+#define IMU_CS_PIN                               3
+#endif
+
+#ifndef I2C_Mux_Reset_PORT                      
+#define I2C_Mux_Reset_PORT                       gpioPortC
+#endif
+#ifndef I2C_Mux_Reset_PIN                       
+#define I2C_Mux_Reset_PIN                        6
 #endif
 
 // [CUSTOM_PIN_NAME]$

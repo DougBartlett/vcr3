@@ -128,7 +128,7 @@ static inline int8_t lraSelectChannel(uint8_t ch)                             //
   { static uint8_t priorCh = 255;
     if(ch >= NCHANNELS) return(-1);
     if(ch != priorCh)                                                         // Avoid glitches on LRA select lines if reselecting the same finger
-      { if(fingerSelectI2C)
+      { if(I2CBusMux)
             i2c_write(PCA9546A_ADDRESS, 1 << ch, NULL, 0);
         else
           { GPIO_PortOutClear(gpioPortB, 0x1E);                               // Set all LRA select lines low

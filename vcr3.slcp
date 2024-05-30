@@ -23,39 +23,44 @@ include:
 - path: ''
   file_list:
   - {path: app.h}
-sdk: {id: gecko_sdk, version: 4.4.1}
+sdk: {id: gecko_sdk, version: 4.4.3}
 toolchain_settings: []
 component:
-- instance: [btn0]
-  id: simple_button
+- {id: EFR32BG22C224F512IM40}
+- {id: app_assert}
+- {id: app_log}
+- {id: bluetooth_feature_connection}
+- {id: bluetooth_feature_gatt}
 - {id: bluetooth_feature_gatt_server}
-- {id: in_place_ota_dfu}
-- {id: bluetooth_feature_sm}
 - {id: bluetooth_feature_legacy_advertiser}
-- {id: mpu}
+- {id: bluetooth_feature_legacy_scanner}
+- {id: bluetooth_feature_sm}
+- {id: bluetooth_feature_system}
+- {id: bluetooth_stack}
+- {id: bootloader_interface}
+- {id: brd4001a}
+- {id: brd4108a}
+- {id: bt_post_build}
+- {id: component_catalog}
+- instance: [Bat_Sense_Enable, Bat_Sense_Voltage, Flash_CS, I2C_Mux_Reset, IMU_CS,
+    IMU_INT]
+  id: emlib_gpio_simple_init
 - {id: gatt_configuration}
 - {id: gatt_service_device_information}
-- instance: [led0]
-  id: simple_led
-- {id: bluetooth_stack}
-- instance: [vcom]
-  id: iostream_eusart
-- {id: rail_util_pti}
-- {id: bluetooth_feature_gatt}
-- {id: brd4108a}
-- {id: bluetooth_feature_legacy_scanner}
-- {id: app_log}
-- {id: bt_post_build}
-- {id: bluetooth_feature_connection}
-- {id: brd4001a}
-- {id: bluetooth_feature_system}
 - instance: [mikroe]
   id: i2cspm
-- {id: component_catalog}
+- {id: in_place_ota_dfu}
+- instance: [vcom]
+  id: iostream_eusart
 - {id: iostream_eusart_core}
-- {id: bootloader_interface}
-- {id: app_assert}
-- {id: EFR32BG22C224F512IM40}
+- {id: mpu}
+- {id: rail_util_pti}
+- instance: [btn0]
+  id: simple_button
+- instance: [led0]
+  id: simple_led
+- instance: [mikroe]
+  id: spidrv
 other_file:
 - {path: image/readme_img0.png}
 - {path: image/readme_img1.png}

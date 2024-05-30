@@ -39,7 +39,7 @@ typedef struct vcrParameters
                                           // Note that the vibrateSet_t does not sent either VCR mirroring or frequency to the remote glove.  This must be handled separately!
   } vibrateSet_t;
 
-extern uint8_t fingerSelectI2C;
+extern uint8_t I2CBusMux;
 extern vcrParameters_t currentParams;
 
 void    vcrVibrateSet(vibrateSet_t *vset);

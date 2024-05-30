@@ -180,11 +180,6 @@ void app_init(void)
   { setvbuf(stdout, obuffer, _IOLBF, sizeof(obuffer));                                  // Line buffering mode on stdout with buffer
     setvbuf(stdin, NULL, _IONBF, 0);                                                    // Unbuffered mode on stdin
 
-    for(uint8_t pin = 1; pin < 5; pin++)                                                // Configure the port B GPIO pins used to gate the finger multiplexer FETS
-      { GPIO_PinModeSet(gpioPortB, pin, gpioModePushPull, 0);
-        GPIO_PinOutClear(gpioPortB, pin);
-      }
-
     if(nvm3_repackNeeded(nvm3_defaultHandle))                                           // If needed, Do NVM re-packing
         nvm3_repack(nvm3_defaultHandle);
 
@@ -407,7 +402,7 @@ void sl_bt_on_event(sl_bt_msg_t *evt)                                           
                 app_assert_status(sc);
     #endif // SL_CATALOG_BLUETOOTH_FEATURE_POWER_CONTROL_PRESENT
 
-                app_assert_status(sc);
+                // app_assert_status(sc);
                 // Begin to advertise again in order to allow multiple connections
                 // sl_bt_legacy_advertiser_start(advertising_set_handle, sl_bt_advertiser_connectable_scannable);
                 // Stop advertising as we must avoid extraneous Tx and Rx signals from advertising or a second connection.  As these would contaminate the time synchronization process
@@ -427,7 +422,7 @@ void sl_bt_on_event(sl_bt_msg_t *evt)                                           
                 // app_assert_status(sc);
 
                 sc = sl_bt_legacy_advertiser_start(advertising_set_handle, sl_bt_advertiser_connectable_scannable);                 // Restart advertising after client has disconnected
-                app_assert_status(sc);
+                // app_assert_status(sc);
               }
             break;
 

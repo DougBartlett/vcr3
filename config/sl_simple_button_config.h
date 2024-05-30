@@ -40,20 +40,20 @@
 // <i> Default: 5
 // <i> Defines the number of calls to sl_simple_button_poll_step wherein the button
 // <i> state must remain the same before the button state is considered debounced
-#define SL_SIMPLE_BUTTON_DEBOUNCE_BITS    5U
+#define SL_SIMPLE_BUTTON_DEBOUNCE_BITS    1U
 
 // <o SL_SIMPLE_BUTTON_GPIO_MODE>
 // <gpioModeInput=> GPIO Input
 // <gpioModeInputPull=> GPIO Input Pull
 // <gpioModeInputPullFilter=> GPIO Input Pull Filter
 // <i> Default: gpioModeInput
-#define SL_SIMPLE_BUTTON_GPIO_MODE        gpioModeInput
+#define SL_SIMPLE_BUTTON_GPIO_MODE        gpioModeInputPull
 
 // <q SL_SIMPLE_BUTTON_GPIO_DOUT>
 // <i> SL_SIMPLE_BUTTON_GPIO_MODE == gpioModeInput, Filter if DOUT is set
 // <i> SL_SIMPLE_BUTTON_GPIO_MODE == gpioModeInputPull, DOUT determines pull direction
 // <i> SL_SIMPLE_BUTTON_GPIO_MODE == gpioModeInputPullFilter, DOUT determines pull direction
-#define SL_SIMPLE_BUTTON_GPIO_DOUT        0U
+#define SL_SIMPLE_BUTTON_GPIO_DOUT        1U
 
 // <q SL_SIMPLE_BUTTON_POLARITY>
 // <i> 0  Active Low
