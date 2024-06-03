@@ -15,8 +15,8 @@
 #include <sl_bt_api.h>
 #include "gatt_db.h"
 
-#define  FW_REVISION      "4.3.3"
-#define  DATETIME         "08Sep2023 14:00"
+#define  FW_REVISION      "4.3.5"
+#define  DATETIME         "03Jun2024 17:41"
 
 #define  NTIMERHANDLESETS  10
 #define  NVM3_VCR_TIMING_PARAMETERS_KEY       0x3719                            //Unique key for NVM object storage
@@ -483,6 +483,10 @@ void vcrInit(void)
           { GPIO_PinModeSet(gpioPortB, pin, gpioModePushPull, 0);
             GPIO_PinOutClear(gpioPortB, pin);
           }
+      }
+    else                                                                      // Verify I2C bus mux presence
+      { if(!lraTestI2CMux())
+            printf("TCA4596A I2C Multiplexor did not respond properly!\n");
       }
 
     for(uint8_t finger = 0; finger < NFINGERS; finger++)

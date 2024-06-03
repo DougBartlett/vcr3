@@ -33,6 +33,7 @@ typedef struct
     uint8_t pad           :3;
   } lraInitResults_t;
 
+uint8_t lraTestI2CMux();
 int16_t lraReset(uint8_t ch);
 int16_t lraInit(uint8_t ch, lraInitResults_t *results);
 int16_t lraGetAutoCalParams(uint8_t ch, drv2605_autocal_t *acp);

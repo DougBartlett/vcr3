@@ -17,7 +17,7 @@
 
 #define DRV2605_BROADCAST               0x58
 #define DRV2605_ADDRESS                 0x5A        // I2C Slave address of the DRV2605 chips
-#define PCA9546A_ADDRESS                0x70        // I2C Slave address of the PCA9546A I2C multiplexor
+#define TCA9546A_ADDRESS                0x70        // I2C Slave address of the TCA9546A I2C multiplexor
 #define NCHANNELS                       4           // Number of LRA channels available
 
 
@@ -129,7 +129,7 @@ static inline int8_t lraSelectChannel(uint8_t ch)                             //
     if(ch >= NCHANNELS) return(-1);
     if(ch != priorCh)                                                         // Avoid glitches on LRA select lines if reselecting the same finger
       { if(I2CBusMux)
-            i2c_write(PCA9546A_ADDRESS, 1 << ch, NULL, 0);
+            i2c_write(TCA9546A_ADDRESS, 1 << ch, NULL, 0);
         else
           { GPIO_PortOutClear(gpioPortB, 0x1E);                               // Set all LRA select lines low
             // Port/Pin assignments:  F0 = B4, F1 = B3, F2 = B2, F3 = B1
@@ -138,6 +138,16 @@ static inline int8_t lraSelectChannel(uint8_t ch)                             //
         priorCh = ch;                                                         // Remember the most recently selected finger
       }
     return(ch);
+  }
+
+uint8_t lraTestI2CMux()
+  { for(uint8_t wdata = 0; wdata < 16; wdata++)
+      { uint8_t rdata;
+        int16_t writeOk = i2c_write(TCA9546A_ADDRESS, wdata, NULL, 0);
+        int16_t readOk  = i2c_single_read(TCA9546A_ADDRESS, &rdata);
+        if((writeOk != 0) && (readOk != 0) && (wdata != rdata)) return(0);
+      }
+    return(1);
   }
 
 static uint8_t waitUntilGoClear(void)

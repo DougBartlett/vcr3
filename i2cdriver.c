@@ -39,6 +39,17 @@ int16_t i2c_write(const uint8_t address, uint8_t reg, void *data, const uint8_t 
     return(I2CSPM_Transfer(sl_i2cspm_mikroe, &seq));
   }
 
+int16_t i2c_single_read(const uint8_t address, uint8_t *reg)
+  { I2C_TransferSeq_TypeDef seq;
+    seq.addr = address << 1;
+    seq.flags = I2C_FLAG_READ;
+    seq.buf[0].data = &reg;
+    seq.buf[0].len = 1;
+    seq.buf[1].data = NULL;
+    seq.buf[1].len = 0;
+    return(I2CSPM_Transfer(sl_i2cspm_mikroe, &seq));
+  }
+
 void i2c_getErrorMessage(int16_t status, char *strptr, uint8_t maxlen)
   { char *mp;
     switch(status)
