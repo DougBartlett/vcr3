@@ -43,7 +43,7 @@ int16_t i2c_single_read(const uint8_t address, uint8_t *reg)
   { I2C_TransferSeq_TypeDef seq;
     seq.addr = address << 1;
     seq.flags = I2C_FLAG_READ;
-    seq.buf[0].data = &reg;
+    seq.buf[0].data = reg;
     seq.buf[0].len = 1;
     seq.buf[1].data = NULL;
     seq.buf[1].len = 0;

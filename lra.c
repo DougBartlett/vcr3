@@ -145,7 +145,7 @@ uint8_t lraTestI2CMux()
       { uint8_t rdata;
         int16_t writeOk = i2c_write(TCA9546A_ADDRESS, wdata, NULL, 0);
         int16_t readOk  = i2c_single_read(TCA9546A_ADDRESS, &rdata);
-        if((writeOk != 0) && (readOk != 0) && (wdata != rdata)) return(0);
+        if((writeOk != 0) || (readOk != 0) || (wdata != rdata)) return(0);
       }
     return(1);
   }

@@ -15,8 +15,8 @@
 #include <sl_bt_api.h>
 #include "gatt_db.h"
 
-#define  FW_REVISION      "4.3.5"
-#define  DATETIME         "03Jun2024 17:41"
+#define  FW_REVISION      "4.3.6"
+#define  DATETIME         "04Jun2024 07:43"
 
 #define  NTIMERHANDLESETS  10
 #define  NVM3_VCR_TIMING_PARAMETERS_KEY       0x3719                            //Unique key for NVM object storage
@@ -61,7 +61,7 @@ static const uint8_t FingerSequences[24][NFINGERS] = {   // Array of all possibl
   };
 
 void printSplash()
-  { printf("VibroTactile Coordinated Reset Driver  Version: %s %s  (c) 2022-2023 Douglas E. Bartlett\n", FW_REVISION, DATETIME);
+  { printf("VibroTactile Coordinated Reset Driver  Version: %s %s  (c) 2022-2024 Douglas E. Bartlett\n", FW_REVISION, DATETIME);
   }
 
 uint8_t validVibrationSequence(const vcrParameters_t *p)
