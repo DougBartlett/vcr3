@@ -15,8 +15,8 @@
 #include <sl_bt_api.h>
 #include "gatt_db.h"
 
-#define  FW_REVISION      "4.3.6"
-#define  DATETIME         "04Jun2024 07:43"
+#define  FW_REVISION      "4.3.7"
+#define  DATETIME         "13Jun2024 17:17"
 
 #define  NTIMERHANDLESETS  10
 #define  NVM3_VCR_TIMING_PARAMETERS_KEY       0x3719                            //Unique key for NVM object storage
@@ -284,7 +284,7 @@ int16_t vcrProcessCommand(char *cmd)
             puts("\tF <finger>\tStart constant vibration on specified finger");
             puts("\tI <finger>\tInitialize & autocal LRA driver on specified finger");
             puts("\tM\t\tDisplay finger vibration map");
-            puts("\tQ\t\tDisplay LRA resonant frequency, battery voltage & autocal parameters");
+            puts("\tQ <finger>\tDisplay LRA resonant frequency, battery voltage & autocal parameters");
             puts("\tR\t\tReset & initialize LRA drivers");
             puts("\tX <mode>\tSet the multiplexing mode (0 = LRA Fet Mux, 1 = I2C Bus Mux");
             puts("\t@ <finger> <register> <value>\tSet DRV2605 register value");
@@ -406,8 +406,15 @@ int16_t vcrProcessCommand(char *cmd)
             displayEnabled = !displayEnabled;
             break;
         case 'Q':
-            vcrStop();
-            statusPrint(0);
+              { uint16_t finger = 0;
+                int16_t nf;
+                nf = sscanf(cmd+1, "%hu", &finger);
+                vcrStop();
+                if((nf == 1) && (finger < NFINGERS))
+                  { statusPrint(finger);
+                  }
+                else retval = SL_STATUS_INVALID_PARAMETER;
+              }
             break;
         case 'R':
               { vcrStop();
