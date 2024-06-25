@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <strings.h>
+#include <app_log.h>
 #include <sl_sleeptimer.h>
 #include <sl_power_manager.h>
 #include <sl_led.h>
@@ -14,9 +15,6 @@
 #include <sl_bluetooth.h>
 #include <sl_bt_api.h>
 #include "gatt_db.h"
-
-#define  FW_REVISION      "4.3.7"
-#define  DATETIME         "13Jun2024 17:17"
 
 #define  NTIMERHANDLESETS  10
 #define  NVM3_VCR_TIMING_PARAMETERS_KEY       0x3719                            //Unique key for NVM object storage
@@ -59,10 +57,6 @@ static const uint8_t FingerSequences[24][NFINGERS] = {   // Array of all possibl
     { 2, 3, 1, 0 },
     { 3, 2, 1, 0 },
   };
-
-void printSplash()
-  { printf("VibroTactile Coordinated Reset Driver  Version: %s %s  (c) 2022-2024 Douglas E. Bartlett\n", FW_REVISION, DATETIME);
-  }
 
 uint8_t validVibrationSequence(const vcrParameters_t *p)
   { // Tests vcr sequence referenced by *p for self consistent value.  Returns 1 if sequence is valid.
@@ -257,7 +251,7 @@ int16_t vcrProcessCommand(char *cmd)
       { case '\0':
             break;
         case '?':
-            printSplash();
+            appPrintSplash();
             puts("Operational Commands:");
             puts("\td\t\tStore the current vCR parameters in EEPROM as new defaults");
             puts("\tf [<frequency>]\tSet/display VCR vibration frequency");
@@ -480,11 +474,6 @@ void vcrInit(void)
     uint32_t objectType;
     size_t objectSize;
 
-    sl_bt_gatt_server_write_attribute_value(gattdb_firmware_revision_string, 0, sizeof(FW_REVISION), (uint8_t*)FW_REVISION);
-    sl_bt_gatt_server_write_attribute_value(gattdb_software_revision_string, 0, sizeof(DATETIME), (uint8_t*)DATETIME);
-
-    printSplash();
-
     if(I2CBusMux == 0)                                                        // If there is no I2C bus multiplexer, then we must have a fet multiplexer for a single LRA driver
       { for(uint8_t pin = 1; pin < 5; pin++)                                  // Configure the port B GPIO pins used to gate the finger multiplexer FETS
           { GPIO_PinModeSet(gpioPortB, pin, gpioModePushPull, 0);
@@ -493,7 +482,7 @@ void vcrInit(void)
       }
     else                                                                      // Verify I2C bus mux presence
       { if(!lraTestI2CMux())
-            printf("TCA4596A I2C Multiplexor did not respond properly!\n");
+            app_log_error("TCA4596A I2C Multiplexor did not respond properly!\n");
       }
 
     for(uint8_t finger = 0; finger < NFINGERS; finger++)

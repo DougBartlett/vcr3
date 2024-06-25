@@ -37,6 +37,7 @@ uint16_t remoteVibrateSet(vibrateSet_t *set);
  * Initialize application.
  ******************************************************************************/
 
+void appPrintSplash(void);
 void app_init(void);
 
 /***************************************************************************//**

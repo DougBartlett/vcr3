@@ -35,6 +35,9 @@
     <property object="PC06" propertyId="ABModule.selectedRequirement" value="gpio%T%SL_EMLIB_GPIO_INIT_I2C_MUX_RESET%T%sl_emlib_gpio_init_I2C_Mux_Reset_config.h"/>
     <property object="PC06" propertyId="pin.name" value="I2C_Mux_Reset"/>
     <property object="PC06" propertyId="pin.reserve" value="Reserved"/>
+    <property object="PC07" propertyId="ABModule.selectedRequirement" value="gpio%T%SL_SIMPLE_BUTTON_BTN1%T%sl_simple_button_btn1_config.h"/>
+    <property object="PC07" propertyId="pin.name" value="Btn1"/>
+    <property object="PC07" propertyId="pin.reserve" value="Reserved"/>
     <property object="PORTIO" propertyId="portio.euart0.enable.cts" value="Enabled"/>
     <property object="PORTIO" propertyId="portio.euart0.enable.rts" value="Enabled"/>
     <property object="PORTIO" propertyId="portio.euart0.enable.rx" value="Enabled"/>

@@ -36,6 +36,11 @@
 #include <sl_bt_api.h>
 #include <sl_simple_button.h>
 #include <sl_simple_button_instances.h>
+#include <sl_simple_led_instances.h>
+#include <sl_emlib_gpio_init_Flash_CS_config.h>
+#include <sl_emlib_gpio_init_IMU_CS_config.h>
+#include <sl_spidrv_instances.h>
+#include <spidrv.h>
 #ifdef SL_CATALOG_CLI_PRESENT
 #include "sl_cli.h"
 #endif // SL_CATALOG_CLI_PRESENT
@@ -43,7 +48,8 @@
 #include "vcr.h"
 #include "gatt_db.h"
 
-
+#define  FW_REVISION      "4.4.0"
+#define  DATETIME         "25Jun2024 08:54"
 
 #define SCAN_DURATION   10000
 #define ADV_DURATION    30000
@@ -61,7 +67,9 @@ struct connection
     uint8_t  bonding;
   } connectionList[MAXCONNECTIONS];
 
-bool gloveConnected, localVCRStarted, buttonReleasedNoHold, buttonReleasedAfter2Sec, buttonReleasedAfter5Sec, buttonReleasedAfter10Sec;
+bool gloveConnected, localVCRStarted;
+bool stopScannerAction = false;
+uint16_t buttonReleasedAfter = 0;
 uint32_t connIntervalInTicks;
 static sl_sleeptimer_timer_handle_t advertiserStopTimer, scannerStopTimer;
 // static sl_status_t send_notification(uint16_t attribute);
@@ -154,31 +162,50 @@ uint16_t string_to_uuid(char *str, uint8array *uuid)
 
 void buttonTimerHandler(sl_sleeptimer_timer_handle_t *handle, void* p)
   { (void) handle;
-    (*(uint16_t *)(p))++;
+    uint16_t *dcp = (uint16_t *)(p);
+    if(*dcp > 150)                                                                      // LED on continuously when button held for > 15 seconds
+      { sl_led_turn_on(&sl_led_led0);
+      }
+    else if(*dcp > 100)                                                                 // Fast (2x / second) LED blink when button held for 10-15 seconds
+      { if(*dcp % 5 < 2) sl_led_turn_on(&sl_led_led0);
+        else sl_led_turn_off(&sl_led_led0);
+      }
+    else if(*dcp > 50)                                                                  // Slow (1x / second) LED blink when button held for 5-10 seconds
+      { if(*dcp % 10 < 5) sl_led_turn_on(&sl_led_led0);
+        else sl_led_turn_off(&sl_led_led0);
+      }
+    (*dcp)++;                                                                           // Increment the downCount counter tracking how long the button has been depressed
   }
 
 void sl_button_on_change(const sl_button_t *handle)
   { static sl_sleeptimer_timer_handle_t buttonTimerHandle;
     static uint16_t downCount = 0;
-    if(handle == &sl_button_btn0)
+    if((handle == &sl_button_btn0) || (handle == &sl_button_btn1))
       { if(handle->get_state(handle) == 1)
-          { downCount = 1;
-            sl_sleeptimer_start_periodic_timer_ms(&buttonTimerHandle, 100, buttonTimerHandler, &downCount, 0, SL_SLEEPTIMER_NO_HIGH_PRECISION_HF_CLOCKS_REQUIRED_FLAG);
+          { sl_sleeptimer_start_periodic_timer_ms(&buttonTimerHandle, 100, buttonTimerHandler, &downCount, 0, SL_SLEEPTIMER_NO_HIGH_PRECISION_HF_CLOCKS_REQUIRED_FLAG);
+            downCount = 1;
           }
         else
           { sl_sleeptimer_stop_timer(&buttonTimerHandle);
-            if(downCount > 100) buttonReleasedAfter10Sec = true;
-            else if(downCount > 50) buttonReleasedAfter5Sec = true;
-            else if(downCount > 20) buttonReleasedAfter2Sec = true;
-            else buttonReleasedNoHold = true;
+            sl_led_turn_off(&sl_led_led0);
+            buttonReleasedAfter = downCount;
             downCount = 0;
           }
-      }
+     }
+  }
+
+void appPrintSplash()
+  { printf("VibroTactile Coordinated Reset Driver  Version: %s %s  (c) 2022-2024 Douglas E. Bartlett\n", FW_REVISION, DATETIME);
   }
 
 void app_init(void)
   { setvbuf(stdout, obuffer, _IOLBF, sizeof(obuffer));                                  // Line buffering mode on stdout with buffer
     setvbuf(stdin, NULL, _IONBF, 0);                                                    // Unbuffered mode on stdin
+
+    appPrintSplash();
+    sl_bt_gatt_server_write_attribute_value(gattdb_firmware_revision_string, 0, sizeof(FW_REVISION), (uint8_t*)FW_REVISION);
+    sl_bt_gatt_server_write_attribute_value(gattdb_software_revision_string, 0, sizeof(DATETIME), (uint8_t*)DATETIME);
+
 
     if(nvm3_repackNeeded(nvm3_defaultHandle))                                           // If needed, Do NVM re-packing
         nvm3_repack(nvm3_defaultHandle);
@@ -206,6 +233,31 @@ void app_init(void)
     if(prsChannelRx >= 0) RTCC_ChannelInit(2, &ccConfRx);                               // Configure RealTime Clock Capture register 2 to capture Rx active time
     else app_log_error("PRS Channel allocation for RACLRX failed\n");
 
+
+    // Read Flash Memory Chip ID Registers
+    GPIO_PinOutClear(SL_EMLIB_GPIO_INIT_FLASH_CS_PORT, SL_EMLIB_GPIO_INIT_FLASH_CS_PIN);
+    const char flashReadIdTx[4] = { 0x9F, 0xFF, 0xFF, 0xFF };
+    char flashReadIdRx[4];
+    SPIDRV_MTransferB(sl_spidrv_mikroe_handle, flashReadIdTx, flashReadIdRx, sizeof(flashReadIdTx));
+    GPIO_PinOutSet(SL_EMLIB_GPIO_INIT_FLASH_CS_PORT, SL_EMLIB_GPIO_INIT_FLASH_CS_PIN);
+    if((flashReadIdRx[1] != 0xC2) || (flashReadIdRx[2] != 0x28) || (flashReadIdRx[3] != 0x14))
+      app_log_error("Improper Flash Memory Chip ID (0x%.2x 0x%.2x 0x%.2x)\n", flashReadIdRx[1], flashReadIdRx[2], flashReadIdRx[3]);
+
+    // Place Flash Memory Chip in deep sleep mode
+    GPIO_PinOutClear(SL_EMLIB_GPIO_INIT_FLASH_CS_PORT, SL_EMLIB_GPIO_INIT_FLASH_CS_PIN);
+    const char flashSleepTx[3] = { 0xB9 };
+    SPIDRV_MTransmitB(sl_spidrv_mikroe_handle, flashSleepTx, sizeof(flashSleepTx));
+    GPIO_PinOutSet(SL_EMLIB_GPIO_INIT_FLASH_CS_PORT, SL_EMLIB_GPIO_INIT_FLASH_CS_PIN);
+
+    // Read IMU Chip ID Register
+    GPIO_PinOutClear(SL_EMLIB_GPIO_INIT_IMU_CS_PORT, SL_EMLIB_GPIO_INIT_IMU_CS_PIN);
+    const char imuReadIdTx[2] = { 0x75 | 0x80, 0xFF };
+    char imuReadIdRx[2];
+    SPIDRV_MTransferB(sl_spidrv_mikroe_handle, imuReadIdTx, imuReadIdRx, sizeof(imuReadIdTx));
+    GPIO_PinOutSet(SL_EMLIB_GPIO_INIT_IMU_CS_PORT, SL_EMLIB_GPIO_INIT_IMU_CS_PIN);
+    if(imuReadIdRx[1] != 0x4E)
+      app_log_error("Improper IMU Memory Chip ID (0x%.2x)\n", imuReadIdRx[1]);
+
     vcrInit();                                                                         // Initialize the VCR application
   }
 
@@ -224,7 +276,21 @@ void app_process_action(void)
         else if(index < sizeof(buffer) - 1) buffer[index++] = c;
       }
 
-    if(buttonReleasedNoHold)                                                            // Handle short button press events -- toggle between VCR vibrations on/off
+    if(stopScannerAction)
+      { sl_bt_scanner_stop();
+        stopScannerAction = false;
+      }
+
+    if(buttonReleasedAfter > 150)                                                       // Handle 15+ second long button press event      }
+      { bluetooth_action('S');                                                          // Begin scanning to make new bonded connections with advertising gloves
+      }
+    else if(buttonReleasedAfter > 100)                                                  // Handle 10-15 second long button press event
+      { bluetooth_action('a');                                                          // Begin advertising to allow non-bonded (new) connections
+      }
+    else if(buttonReleasedAfter > 50)                                                   // Handle 5-10 second long button press event
+      { vcrAutoCal();                                                                   // Perform autocal on each finger
+      }
+    else if((buttonReleasedAfter > 0) && (buttonReleasedAfter <=20))                    // Handle short (0-2 second) button press events -- toggle between VCR vibrations on/off
       { if(gloveConnected || localVCRStarted)
           { localVCRStarted = false;
             vcrStop();
@@ -235,20 +301,8 @@ void app_process_action(void)
             bluetooth_action('s');
             vcrStart(&currentParams);
           }
-        buttonReleasedNoHold = false;
       }
-    if(buttonReleasedAfter2Sec)                                                         // Handle 2 second long button press event
-      { vcrAutoCal();                                                                   // Perform autocal on each finger
-        buttonReleasedAfter2Sec = false;
-      }
-    if(buttonReleasedAfter5Sec)                                                         // Handle 5 second long button press event
-      { bluetooth_action('a');                                                          // Begin advertising to allow non-bonded (new) connections
-        buttonReleasedAfter5Sec = false;
-      }
-    if(buttonReleasedAfter10Sec)                                                        // Handle 10 second long button press event
-      { bluetooth_action('S');                                                          // Begin scanning to make new bonded connections with advertising gloves
-        buttonReleasedAfter10Sec = false;
-      }
+    buttonReleasedAfter = 0;                                                            // Clear the button released flag so we don't process the action again!
   }
 
 void updateGloveBond(uint8_t connection)                                                // Keeps track of 1 and only 1 bond for a paired glove
@@ -271,26 +325,32 @@ void updateGloveBond(uint8_t connection)                                        
   }
 
 void stopAdvertiser(sl_sleeptimer_timer_handle_t *handle, void *data)                                               // Halt advertising for unbonded connections and return to advert for bonded only
-  { (void) handle;
-    (void) data;
-    sl_bt_sm_configure(0x10, sl_bt_sm_io_capability_noinputnooutput);
-    sl_bt_legacy_advertiser_start(advertising_set_handle, sl_bt_advertiser_connectable_scannable);                 // Restart advertising
-    // app_log_info("Advertising for bonded connections only\n");
+  { (void) data;
+    if(handle == &advertiserStopTimer)
+      { sl_sleeptimer_stop_timer(handle);
+        sl_bt_sm_configure(0x10, sl_bt_sm_io_capability_noinputnooutput);
+        sl_bt_legacy_advertiser_start(advertising_set_handle, sl_bt_advertiser_connectable_scannable);              // Restart advertising
+        app_log_info("Advertising for bonded connections only\n");
+      }
+    else app_log_error("stopAdvertiser with unknown handle\n");
   }
 
 void stopScanner(sl_sleeptimer_timer_handle_t *handle, void *data)                                                  // Halt scanning for advertising glove pair
-  { (void) handle;
-    (void) data;
-    sl_sleeptimer_stop_timer(&scannerStopTimer);
-    sl_bt_scanner_stop();
-    // app_log_info("Scanning stopped\n");
+  { (void) data;
+    if(handle == &scannerStopTimer)
+      { sl_sleeptimer_stop_timer(handle);
+        sl_bt_scanner_stop();
+        app_log_info("Scanning stopped\n");
+        stopScannerAction = true;                                                                                  // Sometimes stopping the scanner here doesn't work, so do it again in app_process_action loop
+      }
+    else app_log_error("stopScanner with unknown handle\n");
   }
 
 uint16_t bluetooth_action(char action)                                                                              // Handle all of the keyboard & BT commands
   { int16_t vcrConn;
     switch(action)
       { case 'a':
-            // app_log_info("Advertising for non-bonded connections\n");
+            app_log_info("Advertising for non-bonded connections\n");
             sl_sleeptimer_start_timer_ms(&advertiserStopTimer, ADV_DURATION, stopAdvertiser, NULL, 0, SL_SLEEPTIMER_NO_HIGH_PRECISION_HF_CLOCKS_REQUIRED_FLAG);
             return(sl_bt_sm_configure(0x00, sl_bt_sm_io_capability_noinputnooutput));
             break;
@@ -315,19 +375,19 @@ uint16_t bluetooth_action(char action)                                          
             return(sl_bt_sm_delete_bondings());
             break;
         case 's':                                                                       // Scan for known (bonded) connection
-            // app_log_info("Scanning for bonded VCR devices\n");
+            app_log_info("Scanning for bonded VCR devices\n");
             allowNonBonded = false;
             sl_bt_sm_configure(0x10, sl_bt_sm_io_capability_noinputnooutput);
-            sl_bt_scanner_set_parameters(sl_bt_scanner_scan_mode_active, 16, 16);       // Setup Scanning with interval & window each set to 10mS (val / .625)
+            sl_bt_scanner_set_parameters(sl_bt_scanner_scan_mode_active, 64, 64);       // Setup Scanning with interval & window each set to 40mS (val / .625)
             sl_sleeptimer_start_timer_ms(&scannerStopTimer, SCAN_DURATION, stopScanner, NULL, 0, SL_SLEEPTIMER_NO_HIGH_PRECISION_HF_CLOCKS_REQUIRED_FLAG);
             return(sl_bt_scanner_start(sl_bt_scanner_scan_phy_1m, sl_bt_scanner_discover_generic));
             break;
         case 'S':                                                                       // Scan for unknown (unbonded) connection
-            // app_log_info("Scanning for unbonded VCR devices\n");
+            app_log_info("Scanning for unbonded VCR devices\n");
             allowNonBonded = true;
             // sl_bt_sm_delete_bondings();
             sl_bt_sm_configure(0x00, sl_bt_sm_io_capability_noinputnooutput);
-            sl_bt_scanner_set_parameters(sl_bt_scanner_scan_mode_active, 16, 16);       // Setup Scanning with interval & window each set to 10mS (val / .625)
+            sl_bt_scanner_set_parameters(sl_bt_scanner_scan_mode_active, 64, 64);       // Setup Scanning with interval & window each set to 40mS (val / .625)
             sl_sleeptimer_start_timer_ms(&scannerStopTimer, SCAN_DURATION, stopScanner, NULL, 0, SL_SLEEPTIMER_NO_HIGH_PRECISION_HF_CLOCKS_REQUIRED_FLAG);
             return(sl_bt_scanner_start(sl_bt_scanner_scan_phy_1m, sl_bt_scanner_discover_generic));
             break;
@@ -368,9 +428,11 @@ void sl_bt_on_event(sl_bt_msg_t *evt)                                           
         case sl_bt_evt_system_boot_id:         //===========================================// This event indicates the device has started and the radio is ready
             { // Do not call any stack command before receiving this boot event!
 
-              // bd_addr localAddress;
-              // uint8_t localAddressType;
-              // sl_bt_system_get_identity_address(&localAddress, &localAddressType);
+              bd_addr localAddress;
+              uint8_t localAddressType;
+              sl_bt_system_get_identity_address(&localAddress, &localAddressType);
+              char str[24];  bd_addr_to_string(localAddress, str, sizeof(str));
+              app_log_info("Local BT Address: %s\n", str);
               sc = sl_bt_connection_set_default_parameters (80 /*100mS min interval*/, 160 /*200mS max_interval*/, 0 /*latency*/, 600 /*6S timeout*/, 0, 65535);
               sc = sl_bt_sm_set_bondable_mode(true);
               sc = sl_bt_sm_configure(0x10, sl_bt_sm_io_capability_noinputnooutput);        // Allow connecitons ONLY FROM BONDED devices
@@ -568,8 +630,8 @@ void sl_bt_on_event(sl_bt_msg_t *evt)                                           
                 if(evtp->event_flags & SL_BT_SCANNER_EVENT_FLAG_CONNECTABLE)
                   {
                     uint8_t hasVCRService = false;
-                    // char str[24];  bd_addr_to_string(evtp->address, str, sizeof(str));
-                    // aoo_log_info("Scan connectable response from %s\n", str);
+                    char str[24];  bd_addr_to_string(evtp->address, str, sizeof(str));
+                    // app_log_info("Scan connectable response from %s\n", str);
                     uint8_t len = evtp->data.len;
                     uint8_t *dp = evtp->data.data;
                     dp = evtp->data.data;
@@ -578,43 +640,42 @@ void sl_bt_on_event(sl_bt_msg_t *evt)                                           
                         uint8_t adtype = *dp++;
                         switch(adtype)
                           {
-//                           case 0x01:        // Flags
-//                                app_log_info("\tFlags = 0x%.2x\n", *dp);
-//                                break;
-//                           case 0x03:        // List of 16 bit services
-//                                aoo_log_info("\t16-bit Services:");
-//                                for(uint8_t s = 0; s < elementlen; s += 2)
-//                                    app_log_info(" 0x%.4hx", *(uint16_t*)(dp + s));
-//                                app_log_info("\n");
-//                                break;
+                           case 0x01:        // Flags
+//                                 app_log_info("\tFlags = 0x%.2x\n", *dp);
+                                break;
+                           case 0x03:        // List of 16 bit services
+//                                app_log_info("\t16-bit Services:");
+//                                for(uint8_t s = 0; s < elementlen; s += 2) app_log_append(" 0x%.4hx", *(uint16_t*)(dp + s));
+//                                app_log_append("\n");
+                                break;
                             case 0x07:        // List of 128 bit services
-                                // app_log_info("\t128-bit Services:\n");
                                 for(uint8_t s = 0; s < elementlen; s += 16)
                                   { if(uuid128cmp(&dp[s], vcrServiceUUID.data) == 0) hasVCRService = 1;
-//                                    app_log_info("\t\t");
-//                                    for(uint8_t b = 0; b < 16; b++) app_log_info(" %.2x", dp[s+b]);
-//                                    app_log_info("\n");
+//                                    app_log_info("\t128-bit Service:");
+//                                    for(uint8_t b = 0; b < 16; b++) app_log_append(" %.2x", dp[s+b]);
+//                                    app_log_append("\n");
                                   }
                                 break;
-//                                case 0x08:        // Shortened local name
+                                case 0x08:        // Shortened local name
 //                                app_log_info("\tShortened local name: %.*s\n", elementlen - 1, dp);
-//                                break;
-//                                case 0x09:        // Complete local name
+                                break;
+                                case 0x09:        // Complete local name
 //                                app_log_info("\tComplete local name: %.*s\n", elementlen - 1, dp);
-//                                break;
+                                break;
                             default:
                                 // app_log_info("\tAD Type = 0x%.2x (%d)\n", adtype, elementlen);
                                 break;
                           }
-                        if(hasVCRService && (allowNonBonded || (evtp->bonding != SL_BT_INVALID_BONDING_HANDLE)))
-                          { uint8_t connection;
-                            stopScanner(NULL, NULL);
-//                            app_log_info("Scanner found %s VCR device\n",
-//                                         evtp->bonding != SL_BT_INVALID_BONDING_HANDLE ? "known/bonded" : "new/unbonded");
-                            sc = sl_bt_connection_open(evtp->address, evtp->address_type, sl_bt_gap_phy_1m, &connection);
-                          }
                         dp += elementlen - 1;
                         i += elementlen + 1;
+                      }
+                    if(hasVCRService && (allowNonBonded || (evtp->bonding != SL_BT_INVALID_BONDING_HANDLE)))
+                      { uint8_t connection;
+                        stopScanner(&scannerStopTimer, NULL);
+                        stopScannerAction = true;
+                        app_log_info("Scanner found %s VCR device at %s\n",
+                                     evtp->bonding != SL_BT_INVALID_BONDING_HANDLE ? "known/bonded" : "new/unbonded", str);
+                        sc = sl_bt_connection_open(evtp->address, evtp->address_type, sl_bt_gap_phy_1m, &connection);
                       }
                   }
               }

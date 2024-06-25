@@ -10,7 +10,8 @@
     <properties key="projectCommon.partId" value="mcu.arm.efr32.bg22.efr32bg22c224f512im40"/>
     <properties key="projectCommon.toolchainId" value="com.silabs.ss.tool.ide.arm.toolchain.gnu.cdt:10.3.1.20210824"/>
     <properties key="universalConfig.projectTypeIds" value="com.silabs.ss.framework.ide.project.core.cdtMbsProjectType"/>
-    <properties key="projectCommon.importModeId" value="LINK_LIBRARIES"/>
+    <properties key="projectCommon.importModeId" value="LINK"/>
     <properties key="universalConfig.incrementalOverwriteConfigs" value="false"/>
+    <properties key="universalConfig.compSelProjInstanceId" value="1718675275545"/>
   </descriptors>
 </model:MDescriptors>

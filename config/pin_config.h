@@ -293,6 +293,13 @@
 #define I2C_Mux_Reset_PIN                        6
 #endif
 
+#ifndef Btn1_PORT                               
+#define Btn1_PORT                                gpioPortC
+#endif
+#ifndef Btn1_PIN                                
+#define Btn1_PIN                                 7
+#endif
+
 // [CUSTOM_PIN_NAME]$
 
 #endif // PIN_CONFIG_H

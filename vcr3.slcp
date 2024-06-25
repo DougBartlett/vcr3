@@ -20,7 +20,7 @@ source:
 - {path: app.c}
 tag: ['hardware:rf:band:2400']
 include:
-- path: ''
+- path: .
   file_list:
   - {path: app.h}
 sdk: {id: gecko_sdk, version: 4.4.3}
@@ -37,6 +37,8 @@ component:
 - {id: bluetooth_feature_sm}
 - {id: bluetooth_feature_system}
 - {id: bluetooth_stack}
+- {id: bootloader_crc}
+- {id: bootloader_delay_driver}
 - {id: bootloader_interface}
 - {id: brd4001a}
 - {id: brd4108a}
@@ -55,7 +57,7 @@ component:
 - {id: iostream_eusart_core}
 - {id: mpu}
 - {id: rail_util_pti}
-- instance: [btn0]
+- instance: [btn0, btn1]
   id: simple_button
 - instance: [led0]
   id: simple_led
